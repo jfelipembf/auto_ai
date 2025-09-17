@@ -78,3 +78,30 @@ async def send_presence(number: str, presence: str = "composing", delay_ms: int 
     except Exception as e:
         # Não falha o fluxo principal por presença
         return {"ok": False, "error": str(e)}
+
+
+def _ensure_remote_jid(remote: str) -> str:
+    s = str(remote)
+    return s if "@" in s else f"{s}@s.whatsapp.net"
+
+
+async def mark_as_read(message_id: str, remote_jid: str, from_me: bool = False) -> Dict[str, Any]:
+    """Marca uma ou mais mensagens como lidas.
+
+    Evolution espera payload no formato:
+    {"readMessages": [{"id": "...", "remoteJid": "5511999999999@s.whatsapp.net", "fromMe": false}]}
+    """
+    url = _instance_path("chat/markMessageAsRead")
+    payload = {
+        "readMessages": [
+            {
+                "id": message_id,
+                "remoteJid": _ensure_remote_jid(remote_jid),
+                "fromMe": bool(from_me),
+            }
+        ]
+    }
+    async with httpx.AsyncClient(timeout=20) as client:
+        resp = await client.post(url, headers=_headers(), json=payload)
+        resp.raise_for_status()
+        return resp.json()
