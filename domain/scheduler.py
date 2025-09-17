@@ -93,5 +93,9 @@ class DebounceScheduler:
                 # Limpa fila após responder
                 fila_repo.clear_by_phone(phone_number)
         except Exception:
-            # Não propaga exceção para não derrubar o loop
-            pass
+            # Em qualquer erro (DB/IA/etc), responde com fallback para não ficar mudo
+            try:
+                from services.evolution_api import send_text
+                await send_text(phone_number, REPLY_TEXT)
+            except Exception:
+                pass
