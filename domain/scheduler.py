@@ -42,6 +42,13 @@ class DebounceScheduler:
         except asyncio.CancelledError:
             return
 
+        await self._process(phone_number)
+
+    async def run_now(self, phone_number: str) -> None:
+        """Executa o processamento imediatamente (sem aguardar debounce)."""
+        await self._process(phone_number)
+
+    async def _process(self, phone_number: str) -> None:
         # Lê fila do banco, concatena, gera resposta com IA, limpa fila
         if engine is None:
             # Sem banco: gera e envia resposta só com concat (sem histórico persistido)

@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Dict, Any
 
 from domain.models import MessageIn, MessageOut
+from settings import CONFIG
 from services.evolution_api import send_text, send_presence, mark_as_read
 
 from db.base import get_session, engine
@@ -51,7 +52,11 @@ class ProcessIncomingMessageUseCase:
         except Exception:
             pass
 
-        # Agenda processamento assíncrono por telefone; resposta será enviada pelo scheduler
-        DebounceScheduler.instance().schedule(message.phone_number)
+        # Processamento imediato (útil em ambientes que reciclam o processo e cancelam tasks)
+        if CONFIG.get("SYNC_PROCESSING"):
+            await DebounceScheduler.instance().run_now(message.phone_number)
+        else:
+            # Agenda processamento assíncrono por telefone; resposta será enviada pelo scheduler
+            DebounceScheduler.instance().schedule(message.phone_number)
 
         return MessageOut(ok=True, echo=REPLY_TEXT, details={"scheduled": True})

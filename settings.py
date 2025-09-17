@@ -15,6 +15,7 @@ CONFIG = {
     "TELEGRAM_CHAT_ID": os.getenv("TELEGRAM_CHAT_ID"),
     "TIMEZONE": os.getenv("TIMEZONE", "America/Maceio"),
     "DEBOUNCE_SECONDS": int(os.getenv("DEBOUNCE_SECONDS", "6")),
+    "SYNC_PROCESSING": os.getenv("SYNC_PROCESSING", "false").lower() in ("1", "true", "yes"),
     "ELEVEN_API_KEY": os.getenv("ELEVEN_API_KEY"),
     "ELEVEN_VOICE_ID": os.getenv("ELEVEN_VOICE_ID", "EXAVITQu4vr4xnSDxMaL"),
     # Evolution API Auth
