@@ -10,3 +10,8 @@ app.include_router(webhook_digitando.router)
 @app.get("/")
 def index():
     return {"ok": True, "service": "auto_ai", "version": 1}
+
+
+@app.get("/health")
+def health():
+    return {"ok": True}
