@@ -112,7 +112,13 @@ async def webhook_anota(request: Request):
     texto = "A evolution está ativa?"
     try:
         resp = await send_text(number, texto)
-        return {"ok": True, "echo": texto, "evolution": resp}
+        return {"ok": True, "echo": texto, "evolution": resp, "received": data}
     except Exception as e:
-        return JSONResponse(status_code=200, content={"ok": False, "error": str(e)})
+        return JSONResponse(status_code=200, content={"ok": False, "error": str(e), "received": data})
+
+
+@router.get("/anota")
+def webhook_anota_get():
+    """Endpoint temporário para validar publicação/rota no hosting."""
+    return {"ok": True, "endpoint": "/anota", "hint": "POST JSON aqui para acionar resposta"}
 
