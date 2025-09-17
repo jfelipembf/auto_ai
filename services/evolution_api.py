@@ -25,12 +25,17 @@ def _headers() -> Dict[str, str]:
     """Gera headers de autenticação aceitando formatos comuns da Evolution API.
 
     Conforme a documentação oficial, o header suportado é 'apikey'.
+    Algumas instalações também aceitam/esperam 'Authorization: Bearer <key>'.
     """
     headers = {
         "Content-Type": "application/json",
+        "Accept": "application/json",
     }
     if API_KEY:
         headers["apikey"] = API_KEY
+        headers["X-API-Key"] = API_KEY  # algumas instalações utilizam este cabeçalho
+        # Compatibilidade com instalações que validam via Bearer
+        headers["Authorization"] = f"Bearer {API_KEY}"
     return headers
 
 

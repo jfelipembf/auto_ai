@@ -38,6 +38,18 @@ def _extract_number(payload: dict) -> str | None:
         if val:
             return _normalize_number(val)
 
+    # formatos: sender
+    sender = payload.get("sender")
+    if isinstance(sender, dict):
+        for key in ("id", "phone", "waId"):
+            if sender.get(key):
+                return _normalize_number(sender[key])
+
+    # formatos: chatId / waId
+    for key in ("chatId", "waId"):
+        if payload.get(key):
+            return _normalize_number(payload[key])
+
     # formatos aninhados comuns na Evolution
     # 1) payload.get("data", {}).get("key", {}).get("remoteJid")
     data = payload.get("data")
@@ -60,6 +72,18 @@ def _extract_number(payload: dict) -> str | None:
                 for key in ("from", "number", "remoteJid"):
                     if first.get(key):
                         return _normalize_number(first[key])
+    
+    # 3) top-level messages (algumas integrações enviam sem o envelope data)
+    msgs = payload.get("messages") or payload.get("message")
+    if isinstance(msgs, list) and msgs:
+        first = msgs[0]
+        if isinstance(first, dict):
+            k = first.get("key")
+            if isinstance(k, dict) and k.get("remoteJid"):
+                return _normalize_number(k["remoteJid"])
+            for key in ("from", "number", "remoteJid"):
+                if first.get(key):
+                    return _normalize_number(first[key])
     return None
 
 
