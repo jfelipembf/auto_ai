@@ -62,6 +62,43 @@ async def send_text(number: str, text: str) -> Dict[str, Any]:
         return resp.json()
 
 
+async def get_audio_base64(message_id: str) -> Dict[str, Any]:
+    """Tenta obter a mídia (áudio) em base64 para um message_id.
+
+    Como a Evolution possui variações de rota dependendo da versão, tentamos
+    alguns endpoints comuns. Retorna { ok: True, data: <base64>, mimetype, ... }
+    ou { ok: False, error }.
+    """
+    candidates = [
+        ("POST", _instance_path("chat/getMessageMedia")),
+        ("GET", f"{_instance_path('message/getMediaById')}?messageId={message_id}"),
+        ("POST", _instance_path("message/getMedia")),
+        ("POST", _instance_path("chat/getMedia")),
+    ]
+
+    async with httpx.AsyncClient(timeout=60) as client:
+        for method, url in candidates:
+            try:
+                if method == "GET":
+                    resp = await client.get(url, headers=_headers())
+                else:
+                    resp = await client.post(url, headers=_headers(), json={"messageId": message_id})
+                if resp.is_success:
+                    data = resp.json()
+                    # normalizar possíveis formatos
+                    base64_data = (
+                        data.get("data")
+                        or data.get("base64")
+                        or data.get("media")
+                        or data.get("result")
+                    )
+                    if base64_data:
+                        return {"ok": True, "data": base64_data, "raw": data}
+            except Exception:
+                continue
+    return {"ok": False, "error": "no_media_endpoint_succeeded"}
+
+
 async def send_presence(number: str, presence: str = "composing", delay_ms: int = 800) -> Dict[str, Any]:
     """Opcional: envia presença (digitando/gravação). Ignora silenciosamente se endpoint não existir.
 

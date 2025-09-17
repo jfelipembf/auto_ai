@@ -31,3 +31,13 @@ class HistoricoRepositoryImpl:
         self.session.add(item)
         self.session.flush()
         return item
+
+    def list_by_session(self, session_id: str, limit: int = 20):
+        q = (
+            self.session.query(HistoricoMensagem)
+            .filter(HistoricoMensagem.session_id == session_id)
+            .order_by(HistoricoMensagem.created_at.asc())
+        )
+        if limit:
+            q = q.limit(limit)
+        return q.all()

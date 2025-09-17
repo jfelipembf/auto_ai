@@ -10,6 +10,7 @@ class MessageIn(BaseModel):
     remote_jid: Optional[str] = None
     from_me: Optional[bool] = None
     text: Optional[str] = None
+    is_audio: Optional[bool] = None
     timestamp: Optional[int] = None
     raw: Dict[str, Any] = {}
 

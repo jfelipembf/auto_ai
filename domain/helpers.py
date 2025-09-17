@@ -25,6 +25,7 @@ def extract_message_in(payload: Dict[str, Any]) -> Optional[MessageIn]:
     remote_jid = None
     from_me = None
     timestamp = None
+    is_audio = None
 
     # common shapes
     if isinstance(payload.get("message"), dict):
@@ -66,6 +67,14 @@ def extract_message_in(payload: Dict[str, Any]) -> Optional[MessageIn]:
                     or first.get("conversation")
                     or text
                 )
+        # detect audio in nested message
+        msg = data.get("message")
+        if isinstance(msg, dict):
+            audio_msg = msg.get("audioMessage")
+            if isinstance(audio_msg, dict):
+                # ptt true indica áudio de voz
+                is_audio = bool(audio_msg.get("ptt", True)) or True
+
         # more text candidates
         text = (
             text
@@ -88,7 +97,13 @@ def extract_message_in(payload: Dict[str, Any]) -> Optional[MessageIn]:
                 message_id = k.get("id") or message_id
             for kk in ("from", "number", "remoteJid"):
                 number = number or first.get(kk)
-            text = first.get("message", {}).get("conversation") or first.get("conversation") or text
+            # audio detection on top-level
+            msg = first.get("message") or {}
+            if isinstance(msg, dict):
+                audio_msg = msg.get("audioMessage")
+                if isinstance(audio_msg, dict):
+                    is_audio = bool(audio_msg.get("ptt", True)) or True
+            text = msg.get("conversation") or first.get("conversation") or text
 
     phone = normalize_number(number)
     return MessageIn(
@@ -97,6 +112,7 @@ def extract_message_in(payload: Dict[str, Any]) -> Optional[MessageIn]:
         remote_jid=remote_jid,
         from_me=from_me,
         text=(text or "").strip() or None,
+        is_audio=is_audio,
         timestamp=timestamp if isinstance(timestamp, int) else None,
         raw=payload,
     )
