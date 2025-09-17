@@ -1,12 +1,11 @@
 from fastapi import FastAPI
-from routers import webhook_mensagem, webhook_digitando
+from routers import webhook_mensagem
 import logging
 from db.base import init_db, list_tables
 
 app = FastAPI()
 
 app.include_router(webhook_mensagem.router)
-app.include_router(webhook_digitando.router)
 
 
 @app.get("/")

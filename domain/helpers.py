@@ -17,6 +17,8 @@ def normalize_number(raw: Optional[str]) -> Optional[str]:
 def extract_message_in(payload: Dict[str, Any]) -> Optional[MessageIn]:
     if not isinstance(payload, dict):
         return None
+    # Em alguns webhooks da Evolution, o conteúdo real vem em payload.body
+    root = payload.get("body") if isinstance(payload.get("body"), dict) else payload
 
     # direct fields
     number = None
@@ -28,27 +30,31 @@ def extract_message_in(payload: Dict[str, Any]) -> Optional[MessageIn]:
     is_audio = None
 
     # common shapes
-    if isinstance(payload.get("message"), dict):
-        number = payload["message"].get("from") or number
-        text = payload["message"].get("body") or text
+    if isinstance(root.get("message"), dict):
+        number = root["message"].get("from") or number
+        text = root["message"].get("body") or text
     for k in ("from", "number", "remoteJid"):
-        number = number or payload.get(k)
+        number = number or root.get(k)
 
-    if payload.get("sender") and isinstance(payload["sender"], dict):
+    if root.get("sender") and isinstance(root["sender"], dict):
         for k in ("id", "phone", "waId"):
-            number = number or payload["sender"].get(k)
+            number = number or root["sender"].get(k)
 
     for k in ("chatId", "waId"):
-        number = number or payload.get(k)
+        number = number or root.get(k)
 
     # nested 'data'
-    data = payload.get("data")
+    data = root.get("data")
     if isinstance(data, dict):
         key = data.get("key")
         if isinstance(key, dict):
             remote_jid = key.get("remoteJid") or remote_jid
             from_me = key.get("fromMe") if from_me is None else from_me
             message_id = key.get("id") or message_id
+            # Fallback: se não conseguimos pegar o número por outros campos,
+            # usamos o remoteJid como fonte (ex.: 5511999999999@s.whatsapp.net)
+            if not number and remote_jid:
+                number = remote_jid
         # messages list variant
         msgs = data.get("messages") or data.get("message")
         if isinstance(msgs, list) and msgs:
@@ -80,13 +86,13 @@ def extract_message_in(payload: Dict[str, Any]) -> Optional[MessageIn]:
             text
             or data.get("message", {}).get("conversation")
             or data.get("conversation")
-            or payload.get("message")
-            or payload.get("text")
+            or root.get("message")
+            or root.get("text")
         )
         timestamp = data.get("messageTimestamp") or timestamp
 
     # top-level messages (array)
-    msgs2 = payload.get("messages") or payload.get("message")
+    msgs2 = root.get("messages") or root.get("message")
     if isinstance(msgs2, list) and msgs2:
         first = msgs2[0]
         if isinstance(first, dict):
