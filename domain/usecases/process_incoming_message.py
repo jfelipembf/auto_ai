@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from typing import Dict, Any
 
-from settings import CONFIG
 from domain.models import MessageIn, MessageOut
 from services.evolution_api import send_text, send_presence, mark_as_read
 
 from db.base import get_session, engine
 from db.fila import FilaRepositoryImpl
 from db.historico import HistoricoRepositoryImpl
+from domain.scheduler import DebounceScheduler
 
 
 REPLY_TEXT = "A evolution está ativa?"
@@ -45,22 +45,13 @@ class ProcessIncomingMessageUseCase:
         except Exception:
             pass
 
-        # 3) Enviar presença curta e resposta
+        # 3) Enviar presença curta e agendar processamento por telefone (debounce)
         try:
             await send_presence(message.phone_number, presence="composing", delay_ms=600)
         except Exception:
             pass
 
-        resp: Dict[str, Any] = await send_text(message.phone_number, REPLY_TEXT)
+        # Agenda processamento assíncrono por telefone; resposta será enviada pelo scheduler
+        DebounceScheduler.instance().schedule(message.phone_number)
 
-        # 4) Persistir resposta do agente (histórico)
-        if engine is not None:
-            try:
-                with get_session() as db:
-                    HistoricoRepositoryImpl(db).append(
-                        session_id=message.phone_number, msg_type="ai", content=REPLY_TEXT
-                    )
-            except Exception:
-                pass
-
-        return MessageOut(ok=True, echo=REPLY_TEXT, details={"evolution": resp})
+        return MessageOut(ok=True, echo=REPLY_TEXT, details={"scheduled": True})

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import contextlib
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
 from settings import CONFIG
@@ -33,3 +33,29 @@ def get_session():
         raise
     finally:
         db.close()
+
+
+def init_db() -> dict:
+    """Cria as tabelas necessárias se não existirem.
+
+    Importa os modelos para registrá-los no metadata e executa create_all.
+    Retorna um resumo com as tabelas detectadas após a criação.
+    """
+    if engine is None:
+        return {"ok": False, "reason": "no_engine"}
+
+    # Importa modelos para registrar no metadata
+    from db import fila as _fila  # noqa: F401
+    from db import historico as _historico  # noqa: F401
+
+    Base.metadata.create_all(engine)
+    insp = inspect(engine)
+    tables = insp.get_table_names()
+    return {"ok": True, "tables": tables}
+
+
+def list_tables() -> dict:
+    if engine is None:
+        return {"ok": False, "reason": "no_engine"}
+    insp = inspect(engine)
+    return {"ok": True, "tables": insp.get_table_names()}
