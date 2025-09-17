@@ -24,15 +24,13 @@ INSTANCE: Optional[str] = CONFIG.get("EVOLUTION_INSTANCE")
 def _headers() -> Dict[str, str]:
     """Gera headers de autenticação aceitando formatos comuns da Evolution API.
 
-    Algumas instalações usam 'apikey'; outras usam 'Authorization: Bearer <key>'.
-    Para máxima compatibilidade, enviamos ambos sem prejuízo.
+    Conforme a documentação oficial, o header suportado é 'apikey'.
     """
     headers = {
         "Content-Type": "application/json",
     }
     if API_KEY:
         headers["apikey"] = API_KEY
-        headers["Authorization"] = f"Bearer {API_KEY}"
     return headers
 
 

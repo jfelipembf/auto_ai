@@ -2,10 +2,8 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
 from services.evolution_api import send_text, send_presence
-from utils.logger import get_logger
 
 router = APIRouter()
-log = get_logger("webhook_mensagem")
 
 
 def _normalize_number(raw: str | None) -> str | None:
@@ -77,11 +75,10 @@ async def webhook_anota(request: Request):
     except Exception:
         data = {}
 
-    log.info(f"/anota payload: {data}")
+    # payload recebido
 
     number = _extract_number(data)
     if not number:
-        log.warning("numero nao encontrado no payload")
         return JSONResponse(status_code=200, content={"ok": False, "reason": "number_not_found"})
 
     # Opcional: enviar presença de 'digitando' breve
@@ -91,9 +88,7 @@ async def webhook_anota(request: Request):
     texto = "A evolution está ativa?"
     try:
         resp = await send_text(number, texto)
-        log.info(f"mensagem enviada para {number}: {resp}")
         return {"ok": True, "echo": texto, "evolution": resp}
     except Exception as e:
-        log.error(f"erro ao enviar mensagem para {number}: {e}")
         return JSONResponse(status_code=200, content={"ok": False, "error": str(e)})
 
